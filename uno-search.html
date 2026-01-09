@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Uno Search</title>
+	<style>
+		:root {
+			--hue: 40; 
+			--bg-color: lch(12% 1 var(--hue));
+			--text-main: lch(80% 2 var(--hue));
+			--text-highlight: lch(98% 0 var(--hue));
+			--text-placeholder: lch(50% 4 var(--hue));
+			--accent: lch(70% 20 var(--hue));
+			--border-color: lch(20% 2 var(--hue));
+			--search-bg: lch(18% 2 var(--hue));
+			--card-bg: lch(18% 2 var(--hue));
+			--card-hover: lch(22% 3 var(--hue));
+			--dropdown-hover: lch(25% 3 var(--hue));
+			--shadow-color: lch(0% 0 0 / 0.4); 
+			--focus-ring-color: lch(70% 20 var(--hue) / 0.15);
+			--font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			--font-size-s: 14px; --font-size-m: 15px; --font-size-l: 16px;
+			--font-weight-bold: 700; --font-weight-semi: 600;
+			--width-search-max: 800px; --width-grid-max: 900px;
+			--search-height: 64px; --search-radius: 32px; --search-padding-x: 8px; 
+			--card-radius: 12px; --card-padding: 20px; --grid-gap: 20px; --grid-min-col: 200px;
+			--spacing-xs: 4px; --spacing-s: 8px; --spacing-m: 10px; --spacing-l: 15px;
+		}
+		* { box-sizing: border-box; margin: 0; padding: 0; outline: none; scrollbar-width: none; }
+		*::-webkit-scrollbar { display: none; }
+		body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-main); height: 100vh; padding: 0; overflow: hidden; }
+		#app { position: relative; height: 100vh; width: 100%; }
+		.search-wrapper { width: 100%; max-width: var(--width-search-max); padding: 0 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
+		.search-bar { display: flex; align-items: center; background-color: var(--search-bg); border-radius: var(--search-radius); border: 1px solid var(--border-color); padding: 0 var(--search-padding-x); height: var(--search-height); transition: border-color 0.2s ease, box-shadow 0.2s ease; position: relative; }
+		.search-bar:focus-within { border-color: var(--accent); }
+		.engine-dropdown { position: relative; height: 100%; display: flex; align-items: center; margin-right: 10px; }
+		.engine-trigger { display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 12px; border-radius: 22px; cursor: pointer; transition: background 0.2s; color: var(--text-highlight); gap: 8px; font-size: var(--font-size-s); font-weight: var(--font-weight-semi); user-select: none; }
+		.engine-trigger:hover { background-color: var(--dropdown-hover); }
+		.engine-icon-current { width: 32px; height: 32px; border-radius: 4px; object-fit: contain; }
+		.engine-arrow { width: 12px; height: 12px; opacity: 0.7; transition: transform 0.2s; }
+		.engine-dropdown.open .engine-arrow { transform: rotate(180deg); }
+		.engine-options { position: absolute; top: 120%; left: 0; background-color: var(--search-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s ease; z-index: 200;max-height: 300px; overflow-y: auto; }
+		.engine-dropdown.open .engine-options { opacity: 1; visibility: visible; transform: translateY(0); }
+		.engine-option { display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; color: var(--text-main); font-size: var(--font-size-m); gap: 12px; }
+		.engine-option:hover { background-color: var(--dropdown-hover); color: var(--text-highlight); }
+		.engine-option img { width: 20px; height: 20px; border-radius: 3px; }
+		.search-input { flex-grow: 1; background: transparent; border: none; color: var(--text-highlight); font-size: var(--font-size-l); height: 100%; padding-left: 5px; line-height: normal; }
+		.search-input::placeholder { color: var(--text-placeholder); opacity: 0.6; }
+		.bookmarks-container { position: absolute; top: 50%; bottom: 0; left: 0; right: 0; width: 100%; max-width: var(--width-grid-max); margin: 0 auto; padding: 12vh 20px 50px; display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-col), 1fr)); gap: var(--grid-gap); align-content: start; overflow-y: auto; mask-image: linear-gradient(to bottom, transparent 0%, black 50px, black 90%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 50px, black 90%, transparent 100%); }
+		.category-card { background-color: var(--card-bg); padding: var(--card-padding); border-radius: var(--card-radius); border: 1px solid var(--border-color); transition: background-color 0.2s ease, border-color 0.2s ease; }
+		.category-card:hover { background-color: var(--card-hover); border-color: var(--accent); }
+		.category-title { color: var(--accent); font-size: var(--font-size-s); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--spacing-l); font-weight: var(--font-weight-bold); border-bottom: 1px solid var(--border-color); padding-bottom: var(--spacing-s); }
+		.link-list { list-style: none; }
+		.link-item { margin-bottom: var(--spacing-s); }
+		.link-item a { text-decoration: none; color: var(--text-main); font-size: var(--font-size-m); transition: color 0.2s; display: flex; align-items: center; padding: var(--spacing-xs) 0; gap: 10px; }
+		.link-item a:hover { color: var(--text-highlight); }
+		.link-icon { width: 16px; height: 16px; object-fit: contain; border-radius: 2px; opacity: 0.8; }
+		.link-item a:hover .link-icon { opacity: 1; }
+		@media (max-width: 600px) {
+			body { overflow: auto; }
+			#app { display: flex; flex-direction: column; height: auto; min-height: 100vh; padding: 40px 20px; }
+			.search-wrapper { position: relative; top: auto; left: auto; transform: none; margin-bottom: 40px; z-index: 100; }
+			.bookmarks-container { position: relative; top: auto; bottom: auto; padding-top: 0; height: auto; grid-template-columns: 1fr; mask-image: none; -webkit-mask-image: none; overflow: visible; }
+			.search-input { font-size: 20px; }
+			:root { --search-height: 54px; }
+		}
+	</style>
+</head>
+<body>
+	<div id="app">
+		<div class="search-wrapper">
+			<div class="search-bar">
+				<div class="engine-dropdown" id="engine-dropdown">
+					<div class="engine-trigger" id="engine-trigger">
+						<img id="current-engine-icon" class="engine-icon-current" src="" alt="Engine">
+						<svg class="engine-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+					</div>
+					<div class="engine-options" id="engine-options"></div>
+				</div>
+				<input type="text" id="search-input" class="search-input" placeholder="Wonach suchst du?" autofocus>
+			</div>
+		</div>
+		<div id="bookmarks-grid" class="bookmarks-container"></div>
+	</div>
+
+	<script>
+		const searchEngines = [
+			{ name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
+			{ name: 'Google', url: 'https://www.google.com/search?q=' },
+			{ name: 'ChatGPT', url: 'https://chatgpt.com/?hints=search&q=' },
+			{ name: 'Perplexity', url: 'https://www.perplexity.ai/search?q=' },
+			{ name: 'Copilot', url: 'https://copilot.microsoft.com/?q=' },
+			{ name: 'Wikipedia (🇩🇪)', url: 'https://de.wikipedia.org/w/index.php?search=' },
+			{ name: 'Wikipedia (🇺🇸)', url: 'https://en.wikipedia.org/w/index.php?search=' },
+			{ name: 'Minecraft Wiki', url: 'https://minecraft.wiki?search=' },
+			{ name: 'Genius', url: 'https://genius.com/search?q=' },
+			{ name: 'DuckDuckGo Images', url: 'https://duckduckgo.com/?ia=images&q=' },
+			{ name: 'Google Images', url: 'https://www.google.com/search?udm=2&q=' },
+			{ name: 'YouTube', url: 'https://www.youtube.com/results?search_query=' },
+		];
+
+		const bookmarksData = [
+			{ category: 'Entwicklung', links: [
+				{ title: 'GitHub', url: 'https://github.com' },
+				{ title: 'Stack Overflow', url: 'https://stackoverflow.com' },
+				{ title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
+				{ title: 'ChatGPT', url: 'https://chat.openai.com' }
+			]},
+			{ category: 'Nachrichten & Tech', links: [
+				{ title: 'Hacker News', url: 'https://news.ycombinator.com' },
+				{ title: 'Heise', url: 'https://www.heise.de' },
+				{ title: 'The Verge', url: 'https://www.theverge.com' },
+				{ title: 'Tagesschau', url: 'https://www.tagesschau.de' }
+			]},
+			{ category: 'Unterhaltung', links: [
+				{ title: 'YouTube', url: 'https://www.youtube.com' },
+				{ title: 'Twitch', url: 'https://www.twitch.tv' },
+				{ title: 'Netflix', url: 'https://www.netflix.com' },
+				{ title: 'Spotify', url: 'https://open.spotify.com' }
+			]},
+			{ category: 'Tools', links: [
+				{ title: 'Gmail', url: 'https://mail.google.com' },
+				{ title: 'DeepL', url: 'https://www.deepl.com' },
+				{ title: 'Speedtest', url: 'https://www.speedtest.net' },
+				{ title: 'Wetter', url: 'https://www.wetter.com' }
+			]},
+			{ category: 'Design', links: [
+				{ title: 'Dribbble', url: 'https://dribbble.com' },
+				{ title: 'Behance', url: 'https://behance.net' },
+				{ title: 'Coolors', url: 'https://coolors.co' }
+			]},
+			{ category: 'Shopping', links: [
+				{ title: 'Amazon', url: 'https://amazon.de' },
+				{ title: 'eBay', url: 'https://ebay.de' }
+			]}
+		];
+
+		// --- LOCAL STORAGE LOGIC ---
+		const savedIndex = parseInt(localStorage.getItem('uno_search_engine'));
+		let selectedEngineIndex = (!isNaN(savedIndex) && searchEngines[savedIndex]) ? savedIndex : 0;
+
+		const inputElement = document.getElementById('search-input');
+		const bookmarksGrid = document.getElementById('bookmarks-grid');
+		const dropdownContainer = document.getElementById('engine-dropdown');
+		const dropdownTrigger = document.getElementById('engine-trigger');
+		const dropdownOptions = document.getElementById('engine-options');
+		const currentIcon = document.getElementById('current-engine-icon');
+
+		const getFaviconUrl = url => {
+			try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; } catch (e) { return ''; }
+		};
+
+		function updateEngineSelection(index) {
+			selectedEngineIndex = index;
+			currentIcon.src = getFaviconUrl(searchEngines[index].url);
+			localStorage.setItem('uno_search_engine', index); // Speichern
+		}
+
+		function init() {
+			searchEngines.forEach((engine, index) => {
+				const div = document.createElement('div');
+				div.className = 'engine-option';
+				div.innerHTML = `<img src="${getFaviconUrl(engine.url)}"><span>${engine.name}</span>`;
+				div.onclick = () => {
+					updateEngineSelection(index);
+					toggleDropdown(false);
+					inputElement.focus();
+				};
+				dropdownOptions.appendChild(div);
+			});
+			// Initial setzen (lädt gespeichertes oder default)
+			updateEngineSelection(selectedEngineIndex);
+
+			bookmarksData.forEach(cat => {
+				const card = document.createElement('div');
+				card.className = 'category-card';
+				let linksHtml = cat.links.map(link => 
+					`<li class="link-item"><a href="${link.url}"><img class="link-icon" src="${getFaviconUrl(link.url)}"><span>${link.title}</span></a></li>`
+				).join('');
+				card.innerHTML = `<div class="category-title">${cat.category}</div><ul class="link-list">${linksHtml}</ul>`;
+				bookmarksGrid.appendChild(card);
+			});
+		}
+
+		function toggleDropdown(state) {
+			dropdownContainer.classList.toggle('open', state);
+		}
+
+		document.addEventListener('click', e => {
+			if (!dropdownContainer.contains(e.target)) toggleDropdown(false);
+		});
+		dropdownTrigger.addEventListener('click', () => toggleDropdown());
+
+		inputElement.addEventListener('keypress', e => {
+			if (e.key === 'Enter') {
+				const query = inputElement.value.trim();
+				if (query) window.location.href = searchEngines[selectedEngineIndex].url + encodeURIComponent(query);
+			}
+		});
+
+		init();
+	</script>
+</body>
+</html>
