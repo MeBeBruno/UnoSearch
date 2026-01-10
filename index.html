@@ -1,305 +1,624 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uno Search</title>
-    <style>
-        :root {
-            --hue: 40; 
-            --bg-color: lch(12% 1 var(--hue));
-            --text-main: lch(80% 2 var(--hue));
-            --text-highlight: lch(98% 0 var(--hue));
-            --text-placeholder: lch(50% 4 var(--hue));
-            --accent: lch(70% 20 var(--hue));
-            --border-color: lch(20% 2 var(--hue));
-            --search-bg: lch(18% 2 var(--hue));
-            --card-bg: lch(18% 2 var(--hue));
-            --card-hover: lch(22% 3 var(--hue));
-            --dropdown-hover: lch(25% 3 var(--hue));
-            --shadow-color: lch(0% 0 0 / 0.4); 
-            --focus-ring-color: lch(70% 20 var(--hue) / 0.15);
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            --font-size-s: 14px; --font-size-m: 15px; --font-size-l: 16px;
-            --font-weight-bold: 700; --font-weight-semi: 600;
-            --width-search-max: 800px; --width-grid-max: 900px;
-            --search-height: 64px; --search-radius: 32px; --search-padding-x: 8px; 
-            --card-radius: 12px; --card-padding: 20px; --grid-gap: 20px; --grid-min-col: 200px;
-            --spacing-xs: 4px; --spacing-s: 8px; --spacing-m: 10px; --spacing-l: 15px;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; scrollbar-width: none; }
-        *::-webkit-scrollbar { display: none; }
-        
-        /* Body erlaubt jetzt Scrolling */
-        body { 
-            font-family: var(--font-family); 
-            background-color: var(--bg-color); 
-            color: var(--text-main); 
-            min-height: 100vh; 
-            padding: 0; 
-            overflow-y: auto; /* Scrollen erlauben */
-            overflow-x: hidden;
-        }
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Uno Search</title>
+	<link rel="shortcut icon" href="https://em-content.zobj.net/source/apple/419/magnet_1f9f2.png" type="image/png">
+	<style>
+		:root {
+			--hue: 40; 
+			--bg-color: lch(12% 1 var(--hue));
+			--text-main: lch(80% 2 var(--hue));
+			--text-highlight: lch(98% 0 var(--hue));
+			--text-placeholder: lch(50% 4 var(--hue));
+			--accent: lch(70% 20 var(--hue));
+			--border-color: lch(20% 2 var(--hue));
+			--search-bg: lch(18% 2 var(--hue));
+			--card-bg: lch(18% 2 var(--hue));
+			--card-hover: lch(22% 3 var(--hue));
+			--dropdown-hover: lch(25% 3 var(--hue));
+			--shadow-color: lch(0% 0 0 / 0.4); 
+			--focus-ring-color: lch(70% 20 var(--hue) / 0.15);
+			--font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			--font-size-s: 14px; --font-size-m: 15px; --font-size-l: 16px;
+			--font-weight-bold: 700; --font-weight-semi: 600;
+			--width-search-max: 800px; --width-grid-max: 900px;
+			--search-height: 64px; --search-radius: 32px; --search-padding-x: 8px; 
+			--card-radius: 12px; --card-padding: 20px; --grid-gap: 20px; --grid-min-col: 200px;
+			--spacing-xs: 4px; --spacing-s: 8px; --spacing-m: 10px; --spacing-l: 15px;
+			
+			/* Neue Variable für die Höhe des News-Tickers */
+			--news-height: 44px;
+		}
+		
+		* { box-sizing: border-box; margin: 0; padding: 0; outline: none; scrollbar-width: none; }
+		*::-webkit-scrollbar { display: none; }
+		
+		html, body {
+			height: 100%; /* Wichtig für die Maus-Erkennung */
+			width: 100%;
+		}
 
-        #app { 
-            position: relative; 
-            width: 100%; 
-            padding-bottom: 100px; /* Platz unten für entspanntes Scrollen */
-        }
+		body { 
+			font-family: var(--font-family); 
+			background-color: var(--bg-color); 
+			color: var(--text-main); 
+			min-height: 100vh; 
+			/* WICHTIG: Padding oben, damit der fixe Ticker keinen Inhalt verdeckt */
+			padding: var(--news-height) 0 0 0; 
+			overflow-y: auto; 
+			overflow-x: hidden;
+		}
 
-        /* Search Wrapper: Sticky Logic */
-        .search-wrapper { 
-            width: 100%; 
-            max-width: var(--width-search-max); 
-            padding: 0 20px; 
-            margin: 40vh auto 40px auto; /* 40vh Start-Abstand simuliert die Mitte */
-            position: sticky; /* Klebt am Rand beim Scrollen */
-            top: 20px; /* Abstand zum oberen Rand beim Kleben */
-            z-index: 100; 
-        }
+		#app { 
+			position: relative; 
+			width: 100%; 
+			padding-bottom: 100px; 
+		}
 
-        .search-bar { 
-            display: flex; 
-            align-items: center; 
-            background-color: var(--search-bg); 
-            border-radius: var(--search-radius); 
-            border: 1px solid var(--border-color); 
-            padding: 0 var(--search-padding-x); 
-            height: var(--search-height); 
-            transition: border-color 0.2s ease, box-shadow 0.2s ease; 
-            position: relative; 
-            box-shadow: 0 4px 20px var(--shadow-color); /* Leichter Schatten für Tiefe */
-        }
-        
-        .search-bar:focus-within { border-color: var(--accent); }
-        
-        .engine-dropdown { position: relative; height: 100%; display: flex; align-items: center; margin-right: 10px; }
-        .engine-trigger { display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 12px; border-radius: 22px; cursor: pointer; transition: background 0.2s; color: var(--text-highlight); gap: 8px; font-size: var(--font-size-s); font-weight: var(--font-weight-semi); user-select: none; }
-        .engine-trigger:hover { background-color: var(--dropdown-hover); }
-        .engine-icon-current { width: 32px; height: 32px; border-radius: 4px; object-fit: contain; }
-        .engine-arrow { width: 12px; height: 12px; opacity: 0.7; transition: transform 0.2s; }
-        .engine-dropdown.open .engine-arrow { transform: rotate(180deg); }
-        
-        .engine-options { position: absolute; top: 120%; left: 0; background-color: var(--search-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s ease; z-index: 200; max-height: 300px; overflow-y: auto; }
-        .engine-dropdown.open .engine-options { opacity: 1; visibility: visible; transform: translateY(0); }
-        
-        .engine-option { display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; color: var(--text-main); font-size: var(--font-size-m); gap: 12px; }
-        .engine-option:hover { background-color: var(--dropdown-hover); color: var(--text-highlight); }
-        .engine-option img { width: 20px; height: 20px; border-radius: 3px; }
-        
-        .search-input { flex-grow: 1; background: transparent; border: none; color: var(--text-highlight); font-size: var(--font-size-l); height: 100%; padding-left: 5px; line-height: normal; }
-        .search-input::placeholder { color: var(--text-placeholder); opacity: 0.6; }
-        
-        /* Bookmarks Container: Fließt jetzt natürlich unter der Suche */
-        .bookmarks-container { 
-            width: 100%; 
-            max-width: var(--width-grid-max); 
-            margin: 0 auto; 
-            padding: 0 20px; 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-col), 1fr)); 
-            gap: var(--grid-gap); 
-            align-content: start; 
-            /* Keine Maske mehr nötig, da wir scrollen wollen */
-        }
-        
-        .category-card { background-color: var(--card-bg); padding: var(--card-padding); border-radius: var(--card-radius); border: 1px solid var(--border-color); transition: background-color 0.2s ease, border-color 0.2s ease; }
-        .category-card:hover { background-color: var(--card-hover); border-color: var(--accent); }
-        .category-title { color: var(--accent); font-size: var(--font-size-s); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--spacing-l); font-weight: var(--font-weight-bold); border-bottom: 1px solid var(--border-color); padding-bottom: var(--spacing-s); }
-        .link-list { list-style: none; }
-        .link-item { margin-bottom: var(--spacing-s); }
-        .link-item a { text-decoration: none; color: var(--text-main); font-size: var(--font-size-m); transition: color 0.2s; display: flex; align-items: center; padding: var(--spacing-xs) 0; gap: 10px; }
-        .link-item a:hover { color: var(--text-highlight); }
-        .link-icon { width: 16px; height: 16px; object-fit: contain; border-radius: 2px; opacity: 0.8; }
-        .link-item a:hover .link-icon { opacity: 1; }
+		/* --- MARQUEE STYLES (FIXED & JS CONTROLLED) --- */
+		.news-marquee-wrapper {
+			position: fixed; /* Fixiert am Bildschirmrand */
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: var(--news-height);
+			background-color: var(--card-bg);
+			border-bottom: 1px solid var(--border-color);
+			overflow: hidden;
+			display: flex;
+			align-items: center;
+			z-index: 2000; /* Muss über allem liegen */
+			box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+			cursor: ns-resize; /* Zeigt an, dass vertikale Position die Geschwindigkeit ändert */
+			transition: opacity 0.3s ease; /* Weicher Übergang für Opacity */
+			opacity: 1;
+		}
+		
+		/* Klasse für den inaktiven Zustand (Maus weg) */
+		.news-marquee-wrapper.inactive {
+			opacity: 0.5;
+		}
 
-        /* Floating Edit Button (Fixed positioniert, bleibt immer sichtbar) */
-        .floating-edit-btn {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            width: 50px;
-            height: 50px;
-            background-color: var(--search-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-main);
-            text-decoration: none;
-            box-shadow: 0 4px 12px var(--shadow-color);
-            z-index: 10000;
-            transition: all 0.2s ease;
-        }
-        .floating-edit-btn:hover {
-            border-color: var(--accent);
-            color: var(--text-highlight);
-            transform: scale(1.05);
-            background-color: var(--card-hover);
-            cursor: pointer;
-        }
-        .floating-edit-btn svg {
-            width: 22px;
-            height: 22px;
-            stroke-width: 2;
-        }
+		.news-track {
+			display: flex;
+			align-items: center;
+			white-space: nowrap;
+			will-change: transform; 
+			padding-left: 0; /* JS übernimmt das Looping */
+		}
 
-        @media (max-width: 600px) {
-            #app { padding: 0 0 40px 0; }
-            /* Auf Mobile weniger Abstand oben, damit Tastatur Platz hat */
-            .search-wrapper { margin-top: 30vh; margin-bottom: 30px; top: 10px; } 
-            .bookmarks-container { grid-template-columns: 1fr; padding-top: 0; }
-            .search-input { font-size: 20px; }
-            :root { --search-height: 54px; }
-            .floating-edit-btn { bottom: 20px; left: 20px; width: 44px; height: 44px; }
-        }
-    </style>
+		.news-item {
+			display: flex;
+			align-items: center;
+			text-decoration: none;
+			color: var(--text-main);
+			margin-right: 40px; 
+			font-size: var(--font-size-m);
+			transition: color 0.2s;
+			flex-shrink: 0; /* Verhindert Stauchen */
+		}
+
+		.news-item:hover {
+			color: var(--text-highlight);
+		}
+
+		.news-icon {
+			width: 16px;
+			height: 16px;
+			margin-right: 10px;
+			border-radius: 2px;
+			opacity: 0.8;
+			object-fit: contain;
+		}
+
+		.news-item:hover .news-icon {
+			opacity: 1;
+		}
+
+		/* NEU: Pill-Style für Hashtags */
+		.news-tag {
+			background-color: var(--card-hover);
+			color: var(--accent);
+			border: 1px solid var(--border-color);
+			padding: 2px 10px;
+			border-radius: 50px; /* Pill-Form */
+			font-size: 0.85em;
+			font-weight: var(--font-weight-bold);
+			margin-right: 8px;
+			white-space: nowrap;
+			display: inline-block;
+		}
+		
+		/* --- SEARCH STYLES (STICKY UNTER TICKER) --- */
+		.search-wrapper { 
+			width: 100%; 
+			max-width: var(--width-search-max); 
+			padding: 0 20px; 
+			
+			/* Startposition auf 25vh gesetzt */
+			margin: 25vh auto 40px auto; 
+			
+			/* Sticky Logic */
+			position: sticky; 
+			/* Klebt jetzt unter dem News-Ticker (44px) + 20px Abstand */
+			top: calc(var(--news-height) + 20px); 
+			z-index: 1000; 
+		}
+
+		.search-bar { 
+			display: flex; 
+			align-items: center; 
+			background-color: var(--search-bg); 
+			border-radius: var(--search-radius); 
+			border: 1px solid var(--border-color); 
+			padding: 0 var(--search-padding-x); 
+			height: var(--search-height); 
+			transition: border-color 0.2s ease, box-shadow 0.2s ease; 
+			position: relative; 
+			box-shadow: 0 4px 20px var(--shadow-color); 
+		}
+		
+		.search-bar:focus-within { border-color: var(--accent); }
+		
+		.engine-dropdown { position: relative; height: 100%; display: flex; align-items: center; margin-right: 10px; }
+		.engine-trigger { display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 12px; border-radius: 22px; cursor: pointer; transition: background 0.2s; color: var(--text-highlight); gap: 8px; font-size: var(--font-size-s); font-weight: var(--font-weight-semi); user-select: none; }
+		.engine-trigger:hover { background-color: var(--dropdown-hover); }
+		.engine-icon-current { width: 32px; height: 32px; border-radius: 4px; object-fit: contain; }
+		.engine-arrow { width: 12px; height: 12px; opacity: 0.7; transition: transform 0.2s; }
+		.engine-dropdown.open .engine-arrow { transform: rotate(180deg); }
+		
+		.engine-options { position: absolute; top: 120%; left: 0; background-color: var(--search-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s ease; z-index: 200; max-height: 300px; overflow-y: auto; }
+		.engine-dropdown.open .engine-options { opacity: 1; visibility: visible; transform: translateY(0); }
+		
+		.engine-option { display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; color: var(--text-main); font-size: var(--font-size-m); gap: 12px; }
+		.engine-option:hover { background-color: var(--dropdown-hover); color: var(--text-highlight); }
+		.engine-option img { width: 20px; height: 20px; border-radius: 3px; }
+		
+		.search-input { flex-grow: 1; background: transparent; border: none; color: var(--text-highlight); font-size: var(--font-size-l); height: 100%; padding-left: 5px; line-height: normal; }
+		.search-input::placeholder { color: var(--text-placeholder); opacity: 0.6; }
+		
+		/* --- BOOKMARKS STYLES --- */
+		.bookmarks-container { 
+			width: 100%; 
+			max-width: var(--width-grid-max); 
+			margin: 0 auto; 
+			padding: 0 20px; 
+			display: grid; 
+			grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-col), 1fr)); 
+			gap: var(--grid-gap); 
+			align-content: start; 
+		}
+		
+		.category-card { background-color: var(--card-bg); padding: var(--card-padding); border-radius: var(--card-radius); border: 1px solid var(--border-color); transition: background-color 0.2s ease, border-color 0.2s ease; }
+		.category-card:hover { background-color: var(--card-hover); border-color: var(--accent); }
+		.category-title { color: var(--accent); font-size: var(--font-size-s); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--spacing-l); font-weight: var(--font-weight-bold); border-bottom: 1px solid var(--border-color); padding-bottom: var(--spacing-s); }
+		.link-list { list-style: none; }
+		.link-item { margin-bottom: var(--spacing-s); }
+		.link-item a { text-decoration: none; color: var(--text-main); font-size: var(--font-size-m); transition: color 0.2s; display: flex; align-items: center; padding: var(--spacing-xs) 0; gap: 10px; }
+		.link-item a:hover { color: var(--text-highlight); }
+		.link-icon { width: 16px; height: 16px; object-fit: contain; border-radius: 2px; opacity: 0.8; }
+		.link-item a:hover .link-icon { opacity: 1; }
+
+		.floating-edit-btn {
+			position: fixed;
+			bottom: 30px;
+			left: 30px;
+			width: 50px;
+			height: 50px;
+			background-color: var(--search-bg);
+			border: 1px solid var(--border-color);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--text-main);
+			text-decoration: none;
+			box-shadow: 0 4px 12px var(--shadow-color);
+			z-index: 10000;
+			transition: all 0.2s ease;
+		}
+		.floating-edit-btn:hover {
+			border-color: var(--accent);
+			color: var(--text-highlight);
+			transform: scale(1.05);
+			background-color: var(--card-hover);
+			cursor: pointer;
+		}
+		.floating-edit-btn svg { width: 22px; height: 22px; stroke-width: 2; }
+
+		@media (max-width: 600px) {
+			#app { padding: 0 0 40px 0; }
+			.search-wrapper { margin-top: 25vh; margin-bottom: 30px; top: 55px; /* Kleinerer Abstand auf Mobile */ } 
+			.bookmarks-container { grid-template-columns: 1fr; padding-top: 0; }
+			.search-input { font-size: 20px; }
+			:root { --search-height: 54px; }
+			.floating-edit-btn { bottom: 20px; left: 20px; width: 44px; height: 44px; }
+			.news-marquee-wrapper { height: 40px; }
+			.news-item { font-size: 13px; margin-right: 25px; }
+			body { padding-top: 40px; } /* Anpassung Body Padding Mobile */
+		}
+	</style>
 </head>
 <body>
-    <div id="app">
-        <div class="search-wrapper">
-            <div class="search-bar">
-                <div class="engine-dropdown" id="engine-dropdown">
-                    <div class="engine-trigger" id="engine-trigger">
-                        <img id="current-engine-icon" class="engine-icon-current" src="" alt="Engine">
-                        <svg class="engine-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
-                    </div>
-                    <div class="engine-options" id="engine-options"></div>
-                </div>
-                <input type="text" id="search-input" class="search-input" placeholder="Wonach suchst du?" autofocus>
-            </div>
-        </div>
-        <div id="bookmarks-grid" class="bookmarks-container"></div>
-    </div>
+	<div id="app">
+		<div class="news-marquee-wrapper" id="marquee-wrapper">
+			<div id="news-track" class="news-track">
+				<span class="news-item" style="padding-left: 20px;">Lade Nachrichten...</span>
+			</div>
+		</div>
 
-    <a href="https://github.com/MeBeBruno/UnoSearch/edit/main/index.html" class="floating-edit-btn" title="Bearbeiten">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-    </a>
+		<div class="search-wrapper">
+			<div class="search-bar">
+				<div class="engine-dropdown" id="engine-dropdown">
+					<div class="engine-trigger" id="engine-trigger">
+						<img id="current-engine-icon" class="engine-icon-current" src="" alt="Engine">
+						<svg class="engine-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+					</div>
+					<div class="engine-options" id="engine-options"></div>
+				</div>
+				<input type="text" id="search-input" class="search-input" placeholder="Wonach suchst du?" autofocus>
+			</div>
+		</div>
+		<div id="bookmarks-grid" class="bookmarks-container"></div>
+	</div>
 
-    <script>
-        const searchEngines = [
-            { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
-            { name: 'Google', url: 'https://www.google.com/search?q=' },
-            { name: 'ChatGPT', url: 'https://chatgpt.com/?hints=search&q=' },
-            { name: 'Perplexity', url: 'https://www.perplexity.ai/search?q=' },
-            { name: 'Copilot', url: 'https://copilot.microsoft.com/?q=' },
-            { name: 'Wikipedia (🇩🇪)', url: 'https://de.wikipedia.org/w/index.php?search=' },
-            { name: 'Wikipedia (🇺🇸)', url: 'https://en.wikipedia.org/w/index.php?search=' },
-            { name: 'Minecraft Wiki', url: 'https://minecraft.wiki?search=' },
-            { name: 'Genius', url: 'https://genius.com/search?q=' },
-            { name: 'DuckDuckGo Images', url: 'https://duckduckgo.com/?ia=images&q=' },
-            { name: 'Google Images', url: 'https://www.google.com/search?udm=2&q=' },
-            { name: 'YouTube', url: 'https://www.youtube.com/results?search_query=' },
-        ];
+	<a href="https://github.com/MeBeBruno/UnoSearch/edit/main/index.html" class="floating-edit-btn" title="Bearbeiten">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+			<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+		</svg>
+	</a>
 
-        const bookmarksData = [
-            { category: 'Entwicklung', links: [
-                { title: 'GitHub', url: 'https://github.com' },
-                { title: 'Stack Overflow', url: 'https://stackoverflow.com' },
-                { title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
-                { title: 'W3Schools', url: 'https://www.w3schools.com/' },
-                { title: 'Gemini', url: 'https://chat.openai.com' },
-                { title: 'ChatGPT', url: 'https://gemini.google.com/app' },
-                { title: 'CodePen', url: 'https://pen.new/' }
-            ]},
-            { category: 'Nachrichten & Tech', links: [
-                { title: 'Ground News', url: 'https://ground.news' },
-                { title: 'Tagesschau', url: 'https://www.tagesschau.de' },
-                { title: 'ZDFheute', url: 'https://www.zdfheute.de' },
-                { title: 'Zeit Online', url: 'https://www.zeit.de/' },
-                { title: 'BBC', url: 'https://www.bbc.com/' }
-            ]},
-            { category: 'Unterhaltung', links: [
-                { title: 'YouTube', url: 'https://www.youtube.com' },
-                { title: 'Twitch', url: 'https://www.twitch.tv' },
-                { title: 'Netflix', url: 'https://www.netflix.com' },
-                { title: 'Spotify', url: 'https://open.spotify.com' }
-            ]},
-            { category: 'Tools', links: [
-                { title: 'Gmail', url: 'https://mail.google.com' },
-                { title: 'DeepL', url: 'https://www.deepl.com' },
-                { title: 'Speedtest', url: 'https://www.speedtest.net' },
-                { title: 'Wetter', url: 'https://www.wetter.com' }
-            ]},
-            { category: 'Design', links: [
-                { title: 'Dribbble', url: 'https://dribbble.com' },
-                { title: 'Behance', url: 'https://behance.net' },
-                { title: 'Coolors', url: 'https://coolors.co' }
-            ]},
-            { category: 'Shopping', links: [
-                { title: 'Amazon', url: 'https://amazon.de' },
-                { title: 'eBay', url: 'https://ebay.de' }
-            ]}
-        ];
+	<script>
+		// --- SEARCH CONFIG ---
+		const searchEngines = [
+			{ name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
+			{ name: 'Google', url: 'https://www.google.com/search?q=' },
+			{ name: 'ChatGPT', url: 'https://chatgpt.com/?hints=search&q=' },
+			{ name: 'Perplexity', url: 'https://www.perplexity.ai/search?q=' },
+			{ name: 'Copilot', url: 'https://copilot.microsoft.com/?q=' },
+			{ name: 'Wikipedia (🇩🇪)', url: 'https://de.wikipedia.org/w/index.php?search=' },
+			{ name: 'Wikipedia (🇺🇸)', url: 'https://en.wikipedia.org/w/index.php?search=' },
+			{ name: 'Minecraft Wiki', url: 'https://minecraft.wiki?search=' },
+			{ name: 'Emojipedia', url: 'https://emojipedia.org/en/search?q=' },
+			{ name: 'Genius', url: 'https://genius.com/search?q=' },
+			{ name: 'DuckDuckGo Images', url: 'https://duckduckgo.com/?ia=images&q=' },
+			{ name: 'Google Images', url: 'https://www.google.com/search?udm=2&q=' },
+			{ name: 'YouTube', url: 'https://www.youtube.com/results?search_query=' },
+		];
 
-        // --- LOCAL STORAGE LOGIC ---
-        const savedIndex = parseInt(localStorage.getItem('uno_search_engine'));
-        let selectedEngineIndex = (!isNaN(savedIndex) && searchEngines[savedIndex]) ? savedIndex : 0;
+const bookmarksData = [
+			{ category: 'Entwicklung', links: [
+				{ title: 'GitHub', url: 'https://github.com' },
+				{ title: 'Stack Overflow', url: 'https://stackoverflow.com' },
+				{ title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
+				{ title: 'W3Schools', url: 'https://www.w3schools.com/' },
+				{ title: 'Gemini', url: 'https://chat.openai.com' },
+				{ title: 'ChatGPT', url: 'https://gemini.google.com/app' },
+				{ title: 'CodePen', url: 'https://codepen.io/pen' }
+			]},
+			{ category: 'Nachrichten & Tech', links: [
+				{ title: 'Ground News', url: 'https://ground.news' },
+				{ title: 'Tagesschau', url: 'https://www.tagesschau.de' },
+				{ title: 'ZDFheute', url: 'https://www.zdfheute.de' },
+				{ title: 'Zeit Online', url: 'https://www.zeit.de/' },
+				{ title: 'BBC', url: 'https://www.bbc.com/' }
+			]},
+			{ category: 'Unterhaltung', links: [
+				{ title: 'YouTube', url: 'https://www.youtube.com' },
+				{ title: 'Twitch', url: 'https://www.twitch.tv' },
+				{ title: 'Netflix', url: 'https://www.netflix.com' },
+				{ title: 'Spotify', url: 'https://open.spotify.com' }
+			]},
+			{ category: 'Tools', links: [
+				{ title: 'Gmail', url: 'https://mail.google.com' },
+				{ title: 'DeepL', url: 'https://www.deepl.com' },
+				{ title: 'Speedtest', url: 'https://www.speedtest.net' },
+				{ title: 'Wetter', url: 'https://www.wetter.com' }
+			]},
+			{ category: 'Design', links: [
+				{ title: 'Dribbble', url: 'https://dribbble.com' },
+				{ title: 'Behance', url: 'https://behance.net' },
+				{ title: 'Coolors', url: 'https://coolors.co' }
+			]},
+			{ category: 'Shopping', links: [
+				{ title: 'Amazon', url: 'https://amazon.de' },
+				{ title: 'eBay', url: 'https://ebay.de' }
+			]},
+		];
 
-        const inputElement = document.getElementById('search-input');
-        const bookmarksGrid = document.getElementById('bookmarks-grid');
-        const dropdownContainer = document.getElementById('engine-dropdown');
-        const dropdownTrigger = document.getElementById('engine-trigger');
-        const dropdownOptions = document.getElementById('engine-options');
-        const currentIcon = document.getElementById('current-engine-icon');
+		// --- NEWS FEED CONFIG ---
+		const FEED_SOURCES = [
+			{ name: 'Tagesschau', url: 'https://www.tagesschau.de/xml/rss2/' },
+			{ name: 'DLF', url: 'https://www.deutschlandfunk.de/nachrichten-100.rss' },
+			{ name: 'Reuters', url: 'https://www.reutersagency.com/feed/?best-topics=top-news&post_type=best' },
+			{ name: 'Heise', url: 'https://www.heise.de/rss/heise-atom.xml' }
+		];
+		const RSS2JSON_BASE = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
-        const getFaviconUrl = url => {
-            try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; } catch (e) { return ''; }
-        };
+		// --- TICKER CONFIG ---
+		// Max Speed in Pixeln pro Frame (60FPS ca.)
+		const MAX_TICKER_SPEED = 5; 
 
-        function updateEngineSelection(index) {
-            selectedEngineIndex = index;
-            currentIcon.src = getFaviconUrl(searchEngines[index].url);
-            localStorage.setItem('uno_search_engine', index); // Speichern
-        }
+		// --- GLOBAL LOGIC ---
+		const getFaviconUrl = url => {
+			try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; } catch (e) { return ''; }
+		};
 
-        function init() {
-            searchEngines.forEach((engine, index) => {
-                const div = document.createElement('div');
-                div.className = 'engine-option';
-                div.innerHTML = `<img src="${getFaviconUrl(engine.url)}"><span>${engine.name}</span>`;
-                div.onclick = () => {
-                    updateEngineSelection(index);
-                    toggleDropdown(false);
-                    inputElement.focus();
-                };
-                dropdownOptions.appendChild(div);
-            });
-            // Initial setzen (lädt gespeichertes oder default)
-            updateEngineSelection(selectedEngineIndex);
+		const savedIndex = parseInt(localStorage.getItem('uno_search_engine'));
+		let selectedEngineIndex = (!isNaN(savedIndex) && searchEngines[savedIndex]) ? savedIndex : 0;
 
-            bookmarksData.forEach(cat => {
-                const card = document.createElement('div');
-                card.className = 'category-card';
-                let linksHtml = cat.links.map(link => 
-                    `<li class="link-item"><a href="${link.url}"><img class="link-icon" src="${getFaviconUrl(link.url)}"><span>${link.title}</span></a></li>`
-                ).join('');
-                card.innerHTML = `<div class="category-title">${cat.category}</div><ul class="link-list">${linksHtml}</ul>`;
-                bookmarksGrid.appendChild(card);
-            });
-        }
+		const inputElement = document.getElementById('search-input');
+		const bookmarksGrid = document.getElementById('bookmarks-grid');
+		const dropdownContainer = document.getElementById('engine-dropdown');
+		const dropdownTrigger = document.getElementById('engine-trigger');
+		const dropdownOptions = document.getElementById('engine-options');
+		const currentIcon = document.getElementById('current-engine-icon');
+		const newsTrack = document.getElementById('news-track');
+		const marqueeWrapper = document.getElementById('marquee-wrapper');
 
-        function toggleDropdown(state) {
-            dropdownContainer.classList.toggle('open', state);
-        }
+		// Variables for Ticker Animation
+		let tickerOffset = 0;
+		let currentTickerSpeed = 0.5; // Start speed
+		let tickerContentWidth = 0;
+		let animationFrameId;
+		let isWindowActive = true; 
 
-        document.addEventListener('click', e => {
-            if (!dropdownContainer.contains(e.target)) toggleDropdown(false);
-        });
-        dropdownTrigger.addEventListener('click', () => toggleDropdown());
+		function updateEngineSelection(index) {
+			selectedEngineIndex = index;
+			currentIcon.src = getFaviconUrl(searchEngines[index].url);
+			localStorage.setItem('uno_search_engine', index);
+		}
 
-        inputElement.addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                const query = inputElement.value.trim();
-                if (query) window.location.href = searchEngines[selectedEngineIndex].url + encodeURIComponent(query);
-            }
-        });
+		async function fetchNews() {
+			try {
+				const requests = FEED_SOURCES.map(source => 
+					fetch(`${RSS2JSON_BASE}${encodeURIComponent(source.url)}`)
+						.then(res => res.json())
+						.then(data => ({
+							source: source,
+							status: data.status,
+							items: data.items || []
+						}))
+						.catch(err => ({ status: 'error', items: [] }))
+				);
 
-        init();
-    </script>
+				const results = await Promise.all(requests);
+				let allNews = [];
+
+				results.forEach(feed => {
+					if (feed.status === 'ok') {
+						const normalizedItems = feed.items.map(item => {
+							// --- ROBUST DATE PARSING ---
+							// Fix für Safari/Mobile: "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
+							// Nur so wird sort() korrekt funktionieren
+							let dateStr = item.pubDate;
+							if (typeof dateStr === 'string') {
+								dateStr = dateStr.replace(' ', 'T');
+							}
+							const timestamp = new Date(dateStr).getTime();
+
+							// --- SMART TAG LOGIC ---
+							let smartTag = "";
+							
+							// 1. Check Categories (RSS Standard)
+							if (item.categories && item.categories.length > 0) {
+								smartTag = item.categories[0]; 
+								if (smartTag.length > 20) smartTag = ""; 
+							}
+
+							let displayTitle = item.title;
+
+							// 2. Check "Dachzeile: Titel" Pattern
+							if (!smartTag && item.title.includes(': ')) {
+								const parts = item.title.split(': ');
+								if (parts.length > 1 && parts[0].length < 25) {
+									smartTag = parts[0]; 
+									displayTitle = parts.slice(1).join(': '); 
+								}
+							}
+
+							// 3. Logic: Remove if same as Source, Format as Hashtag
+							if (smartTag) {
+								// Wenn Tag gleich wie Quelle ist (case-insensitive), weg damit
+								if (smartTag.trim().toLowerCase() === feed.source.name.toLowerCase()) {
+									smartTag = "";
+								} else {
+									// 3a. Umlaute ersetzen
+									let tag = smartTag;
+									const umlautMap = {
+										'ä': 'ae', 'Ä': 'Ae',
+										'ö': 'oe', 'Ö': 'Oe',
+										'ü': 'ue', 'Ü': 'Ue',
+										'ß': 'ss'
+									};
+									tag = tag.replace(/[äÄöÖüÜß]/g, m => umlautMap[m]);
+									
+									// 3b. Alles außer A-Z, a-z, 0-9 entfernen (auch Leerzeichen)
+									tag = tag.replace(/[^a-zA-Z0-9]/g, '');
+									
+									// 3c. Hashtag davor
+									smartTag = `#${tag}`;
+								}
+							}
+
+							return {
+								...item,
+								sourceName: feed.source.name,
+								sourceUrl: feed.source.url, 
+								itemUrl: item.link, 
+								timestamp: isNaN(timestamp) ? 0 : timestamp, // Fallback für defekte Daten
+								tag: smartTag,
+								cleanTitle: displayTitle
+							};
+						});
+						allNews = allNews.concat(normalizedItems);
+					}
+				});
+
+				// HIER: Globale Sortierung aller Nachrichten nach Zeit
+				allNews.sort((a, b) => b.timestamp - a.timestamp);
+				renderNews(allNews.slice(0, 30));
+
+			} catch (e) {
+				console.error("News Error", e);
+				newsTrack.innerHTML = '<span class="news-item">Nachrichten konnten nicht geladen werden.</span>';
+			}
+		}
+
+		function renderNews(items) {
+			newsTrack.innerHTML = '';
+			
+			// Build HTML string for items
+			let itemsHtml = '';
+			items.forEach(item => {
+				const favicon = getFaviconUrl(item.itemUrl); 
+				
+				// Nur rendern, wenn Tag existiert
+				const tagHtml = item.tag ? `<span class="news-tag">${item.tag}</span>` : '';
+
+				itemsHtml += `
+					<a class="news-item" href="${item.itemUrl}" target="_blank" rel="noopener noreferrer">
+						<img class="news-icon" src="${favicon}" onerror="this.style.display='none'">
+						${tagHtml}
+						<span>${item.cleanTitle}</span>
+					</a>
+				`;
+			});
+
+			// Insert items twice to allow seamless looping
+			newsTrack.innerHTML = itemsHtml + itemsHtml;
+			
+			// Measure width of one set of items
+			requestAnimationFrame(() => {
+				tickerContentWidth = newsTrack.scrollWidth / 2;
+				startTickerAnimation();
+			});
+		}
+
+		// --- TICKER MOUSE CONTROL ---
+		document.addEventListener('mousemove', (e) => {
+			const mouseY = e.clientY;
+			const windowHeight = window.innerHeight;
+			const headerHeight = marqueeWrapper.offsetHeight;
+
+			if (mouseY <= headerHeight) {
+				currentTickerSpeed = 0;
+			} else {
+				const distance = mouseY - headerHeight;
+				const maxDistance = windowHeight - headerHeight;
+				
+				let speedFactor = distance / maxDistance;
+				if (speedFactor < 0) speedFactor = 0;
+				if (speedFactor > 1) speedFactor = 1;
+
+				currentTickerSpeed = speedFactor * MAX_TICKER_SPEED;
+			}
+		});
+
+		// --- ROBUST WINDOW LEAVE/ENTER DETECTION ---
+		
+		function setWindowActive(state) {
+			isWindowActive = state;
+			if (state) {
+				marqueeWrapper.classList.remove('inactive');
+			} else {
+				marqueeWrapper.classList.add('inactive');
+			}
+		}
+
+		// Listener 1: Mouse verlässt das HTML-Element (zuverlässiger als document)
+		document.documentElement.addEventListener('mouseleave', () => setWindowActive(false));
+		document.documentElement.addEventListener('mouseenter', () => setWindowActive(true));
+
+		// Listener 2: Fallback für "Mouse Out"
+		document.addEventListener('mouseout', (e) => {
+			// Wenn das Ziel 'null' ist, hat die Maus das Fenster verlassen
+			if (!e.relatedTarget && !e.toElement) {
+				setWindowActive(false);
+			}
+		});
+
+		// Listener 3: Fenster/Tab verliert Fokus (z.B. Alt+Tab)
+		window.addEventListener('blur', () => setWindowActive(false));
+		window.addEventListener('focus', () => setWindowActive(true));
+
+
+		function startTickerAnimation() {
+			if (animationFrameId) cancelAnimationFrame(animationFrameId);
+			
+			function animate() {
+				// Nur bewegen, wenn Maus im Fenster ist UND Fenster aktiv ist
+				if (isWindowActive) {
+					tickerOffset -= currentTickerSpeed;
+
+					// Loop Check
+					if (Math.abs(tickerOffset) >= tickerContentWidth) {
+						tickerOffset = 0;
+					}
+				}
+
+				newsTrack.style.transform = `translateX(${tickerOffset}px)`;
+				animationFrameId = requestAnimationFrame(animate);
+			}
+			animate();
+		}
+
+		function init() {
+			// Search Engine Init
+			searchEngines.forEach((engine, index) => {
+				const div = document.createElement('div');
+				div.className = 'engine-option';
+				div.innerHTML = `<img src="${getFaviconUrl(engine.url)}"><span>${engine.name}</span>`;
+				div.onclick = () => {
+					updateEngineSelection(index);
+					toggleDropdown(false);
+					inputElement.focus();
+				};
+				dropdownOptions.appendChild(div);
+			});
+			updateEngineSelection(selectedEngineIndex);
+
+			// Bookmarks Init
+			bookmarksData.forEach(cat => {
+				const card = document.createElement('div');
+				card.className = 'category-card';
+				let linksHtml = cat.links.map(link => 
+					`<li class="link-item"><a href="${link.url}"><img class="link-icon" src="${getFaviconUrl(link.url)}"><span>${link.title}</span></a></li>`
+				).join('');
+				card.innerHTML = `<div class="category-title">${cat.category}</div><ul class="link-list">${linksHtml}</ul>`;
+				bookmarksGrid.appendChild(card);
+			});
+
+			// News Init
+			fetchNews();
+		}
+
+		function toggleDropdown(state) {
+			dropdownContainer.classList.toggle('open', state);
+		}
+
+		document.addEventListener('click', e => {
+			if (!dropdownContainer.contains(e.target)) toggleDropdown(false);
+		});
+		dropdownTrigger.addEventListener('click', () => toggleDropdown());
+
+		inputElement.addEventListener('keypress', e => {
+			if (e.key === 'Enter') {
+				const query = inputElement.value.trim();
+				if (query) window.location.href = searchEngines[selectedEngineIndex].url + encodeURIComponent(query);
+			}
+		});
+
+		window.addEventListener('resize', () => {
+			 if(newsTrack.innerHTML !== '') {
+				 tickerContentWidth = newsTrack.scrollWidth / 2;
+			 }
+		});
+
+		init();
+	</script>
 </body>
 </html>
