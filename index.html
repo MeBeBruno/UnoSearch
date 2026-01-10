@@ -131,6 +131,41 @@
 			display: inline-block;
 		}
 		
+		/* --- WEATHER WIDGET STYLES --- */
+		.weather-widget {
+			position: fixed;
+			top: calc(var(--news-height) + 10px);
+			right: 20px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--text-placeholder);
+			font-size: 0.85em;
+			z-index: 1500;
+			background: var(--card-bg);
+			padding: 6px 14px;
+			border-radius: 20px;
+			border: 1px solid var(--border-color);
+			opacity: 0; /* Fade in via JS */
+			transition: opacity 0.5s ease, border-color 0.2s, transform 0.2s;
+			cursor: default;
+			box-shadow: 0 2px 8px var(--shadow-color);
+		}
+		
+		.weather-widget.loaded {
+			opacity: 0.9;
+		}
+		
+		.weather-widget:hover {
+			opacity: 1;
+			border-color: var(--accent);
+			color: var(--text-main);
+		}
+
+		.weather-icon {
+			font-size: 1.2em;
+		}
+
 		/* --- SEARCH STYLES (STICKY UNTER TICKER) --- */
 		.search-wrapper { 
 			width: 100%; 
@@ -138,7 +173,7 @@
 			padding: 0 20px; 
 			
 			/* Startposition auf 25vh gesetzt */
-			margin: 25vh auto 40px auto; 
+			margin: 20vh auto 40px auto; 
 			
 			/* Sticky Logic */
 			position: sticky; 
@@ -238,6 +273,14 @@
 			.news-marquee-wrapper { height: 40px; }
 			.news-item { font-size: 13px; margin-right: 25px; }
 			body { padding-top: 40px; } /* Anpassung Body Padding Mobile */
+			
+			.weather-widget { 
+				top: auto; 
+				bottom: 20px; 
+				right: 20px; 
+				/* Auf Mobile evtl. unten rechts statt oben */
+				background: var(--card-bg);
+			}
 		}
 	</style>
 </head>
@@ -247,6 +290,11 @@
 			<div id="news-track" class="news-track">
 				<span class="news-item" style="padding-left: 20px;">Lade Nachrichten...</span>
 			</div>
+		</div>
+
+		<div id="weather-widget" class="weather-widget">
+			<span class="weather-icon"></span>
+			<span class="weather-temp"></span>
 		</div>
 
 		<div class="search-wrapper">
@@ -289,52 +337,69 @@
 			{ name: 'YouTube', url: 'https://www.youtube.com/results?search_query=' },
 		];
 
-const bookmarksData = [
-			{ category: 'Entwicklung', links: [
+		const bookmarksData = [
+			{
+				category: '💻 Entwicklung',
+				links: [
 				{ title: 'GitHub', url: 'https://github.com' },
+				{ title: 'ChatGPT', url: 'https://chat.openai.com' },
+				{ title: 'Gemini', url: 'https://gemini.google.com/app' },
+				{ title: 'CodePen', url: 'https://codepen.io/pen' },
 				{ title: 'Stack Overflow', url: 'https://stackoverflow.com' },
 				{ title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
-				{ title: 'W3Schools', url: 'https://www.w3schools.com/' },
-				{ title: 'Gemini', url: 'https://chat.openai.com' },
-				{ title: 'ChatGPT', url: 'https://gemini.google.com/app' },
-				{ title: 'CodePen', url: 'https://codepen.io/pen' }
-			]},
-			{ category: 'Nachrichten & Tech', links: [
-				{ title: 'Ground News', url: 'https://ground.news' },
+				{ title: 'W3Schools', url: 'https://www.w3schools.com/' }
+				]
+			},
+			{
+				category: '📰 Nachrichten',
+				links: [
 				{ title: 'Tagesschau', url: 'https://www.tagesschau.de' },
 				{ title: 'ZDFheute', url: 'https://www.zdfheute.de' },
 				{ title: 'Zeit Online', url: 'https://www.zeit.de/' },
-				{ title: 'BBC', url: 'https://www.bbc.com/' }
-			]},
-			{ category: 'Unterhaltung', links: [
+				{ title: 'BBC', url: 'https://www.bbc.com/' },
+				{ title: 'Ground News', url: 'https://ground.news' },
+				{ title: 'Wikipedia', url: 'https://de.wikipedia.org/w/index.php?search=' }
+				]
+			},
+			{
+				category: '🍿 Unterhaltung',
+				links: [
 				{ title: 'YouTube', url: 'https://www.youtube.com' },
 				{ title: 'Twitch', url: 'https://www.twitch.tv' },
 				{ title: 'Netflix', url: 'https://www.netflix.com' },
-				{ title: 'Spotify', url: 'https://open.spotify.com' }
-			]},
-			{ category: 'Tools', links: [
+				{ title: 'Spotify', url: 'https://open.spotify.com' },
+				{ title: 'Genius', url: 'https://genius.com/search?q=' },
+				{ title: 'Minecraft Wiki', url: 'https://minecraft.wiki?search=' }
+				]
+			},
+			{
+				category: '🛠️ Werkzeuge',
+				links: [
 				{ title: 'Gmail', url: 'https://mail.google.com' },
+				{ title: 'Google Kalender', url: 'https://calendar.google.com' },
+				{ title: 'Google Fotos', url: 'https://photos.google.com/' },
+				{ title: 'Google Kontakte', url: 'https://contacts.google.com/' },
 				{ title: 'DeepL', url: 'https://www.deepl.com' },
+				{ title: 'Wetter', url: 'https://www.wetter.com' },
 				{ title: 'Speedtest', url: 'https://www.speedtest.net' },
-				{ title: 'Wetter', url: 'https://www.wetter.com' }
-			]},
-			{ category: 'Design', links: [
-				{ title: 'Dribbble', url: 'https://dribbble.com' },
-				{ title: 'Behance', url: 'https://behance.net' },
-				{ title: 'Coolors', url: 'https://coolors.co' }
-			]},
-			{ category: 'Shopping', links: [
-				{ title: 'Amazon', url: 'https://amazon.de' },
-				{ title: 'eBay', url: 'https://ebay.de' }
-			]},
+				{ title: 'Emojipedia', url: 'https://emojipedia.org/en/search?q=' }
+				]
+			}
 		];
 
 		// --- NEWS FEED CONFIG ---
 		const FEED_SOURCES = [
 			{ name: 'Tagesschau', url: 'https://www.tagesschau.de/xml/rss2/' },
-			{ name: 'DLF', url: 'https://www.deutschlandfunk.de/nachrichten-100.rss' },
-			{ name: 'Reuters', url: 'https://www.reutersagency.com/feed/?best-topics=top-news&post_type=best' },
-			{ name: 'Heise', url: 'https://www.heise.de/rss/heise-atom.xml' }
+			{ name: 'Deutschlandfunk', url: 'https://www.deutschlandfunk.de/nachrichten-100.rss' },
+			{ name: 'ZDF heute', url: 'https://www.zdf.de/rss/zdf/nachrichten' },
+			{ name: 'Die Zeit', url: 'https://newsfeed.zeit.de/index' },
+			{ name: 'Der Spiegel', url: 'https://www.spiegel.de/schlagzeilen/index.rss' },
+			{ name: 'Süddeutsche Zeitung', url: 'https://rss.sueddeutsche.de/rss/Topthemen' },
+			{ name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/' },
+			{ name: 'Deutsche Welle', url: 'https://rss.dw.com/xml/rss-de-all' },
+			{ name: 'NZZ', url: 'https://www.nzz.ch/recent.rss' },
+			{ name: 'Handelsblatt', url: 'https://www.handelsblatt.com/contentexport/feed/schlagzeilen' },
+			{ name: 'Heise Online', url: 'https://www.heise.de/rss/heise-atom.xml' },
 		];
 		const RSS2JSON_BASE = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
@@ -392,8 +457,6 @@ const bookmarksData = [
 					if (feed.status === 'ok') {
 						const normalizedItems = feed.items.map(item => {
 							// --- ROBUST DATE PARSING ---
-							// Fix für Safari/Mobile: "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
-							// Nur so wird sort() korrekt funktionieren
 							let dateStr = item.pubDate;
 							if (typeof dateStr === 'string') {
 								dateStr = dateStr.replace(' ', 'T');
@@ -422,11 +485,9 @@ const bookmarksData = [
 
 							// 3. Logic: Remove if same as Source, Format as Hashtag
 							if (smartTag) {
-								// Wenn Tag gleich wie Quelle ist (case-insensitive), weg damit
 								if (smartTag.trim().toLowerCase() === feed.source.name.toLowerCase()) {
 									smartTag = "";
 								} else {
-									// 3a. Umlaute ersetzen
 									let tag = smartTag;
 									const umlautMap = {
 										'ä': 'ae', 'Ä': 'Ae',
@@ -435,11 +496,7 @@ const bookmarksData = [
 										'ß': 'ss'
 									};
 									tag = tag.replace(/[äÄöÖüÜß]/g, m => umlautMap[m]);
-									
-									// 3b. Alles außer A-Z, a-z, 0-9 entfernen (auch Leerzeichen)
 									tag = tag.replace(/[^a-zA-Z0-9]/g, '');
-									
-									// 3c. Hashtag davor
 									smartTag = `#${tag}`;
 								}
 							}
@@ -449,7 +506,7 @@ const bookmarksData = [
 								sourceName: feed.source.name,
 								sourceUrl: feed.source.url, 
 								itemUrl: item.link, 
-								timestamp: isNaN(timestamp) ? 0 : timestamp, // Fallback für defekte Daten
+								timestamp: isNaN(timestamp) ? 0 : timestamp, 
 								tag: smartTag,
 								cleanTitle: displayTitle
 							};
@@ -458,7 +515,6 @@ const bookmarksData = [
 					}
 				});
 
-				// HIER: Globale Sortierung aller Nachrichten nach Zeit
 				allNews.sort((a, b) => b.timestamp - a.timestamp);
 				renderNews(allNews.slice(0, 30));
 
@@ -471,12 +527,9 @@ const bookmarksData = [
 		function renderNews(items) {
 			newsTrack.innerHTML = '';
 			
-			// Build HTML string for items
 			let itemsHtml = '';
 			items.forEach(item => {
 				const favicon = getFaviconUrl(item.itemUrl); 
-				
-				// Nur rendern, wenn Tag existiert
 				const tagHtml = item.tag ? `<span class="news-tag">${item.tag}</span>` : '';
 
 				itemsHtml += `
@@ -488,10 +541,8 @@ const bookmarksData = [
 				`;
 			});
 
-			// Insert items twice to allow seamless looping
 			newsTrack.innerHTML = itemsHtml + itemsHtml;
 			
-			// Measure width of one set of items
 			requestAnimationFrame(() => {
 				tickerContentWidth = newsTrack.scrollWidth / 2;
 				startTickerAnimation();
@@ -519,7 +570,6 @@ const bookmarksData = [
 		});
 
 		// --- ROBUST WINDOW LEAVE/ENTER DETECTION ---
-		
 		function setWindowActive(state) {
 			isWindowActive = state;
 			if (state) {
@@ -528,20 +578,13 @@ const bookmarksData = [
 				marqueeWrapper.classList.add('inactive');
 			}
 		}
-
-		// Listener 1: Mouse verlässt das HTML-Element (zuverlässiger als document)
 		document.documentElement.addEventListener('mouseleave', () => setWindowActive(false));
 		document.documentElement.addEventListener('mouseenter', () => setWindowActive(true));
-
-		// Listener 2: Fallback für "Mouse Out"
 		document.addEventListener('mouseout', (e) => {
-			// Wenn das Ziel 'null' ist, hat die Maus das Fenster verlassen
 			if (!e.relatedTarget && !e.toElement) {
 				setWindowActive(false);
 			}
 		});
-
-		// Listener 3: Fenster/Tab verliert Fokus (z.B. Alt+Tab)
 		window.addEventListener('blur', () => setWindowActive(false));
 		window.addEventListener('focus', () => setWindowActive(true));
 
@@ -550,20 +593,69 @@ const bookmarksData = [
 			if (animationFrameId) cancelAnimationFrame(animationFrameId);
 			
 			function animate() {
-				// Nur bewegen, wenn Maus im Fenster ist UND Fenster aktiv ist
 				if (isWindowActive) {
 					tickerOffset -= currentTickerSpeed;
-
-					// Loop Check
 					if (Math.abs(tickerOffset) >= tickerContentWidth) {
 						tickerOffset = 0;
 					}
 				}
-
 				newsTrack.style.transform = `translateX(${tickerOffset}px)`;
 				animationFrameId = requestAnimationFrame(animate);
 			}
 			animate();
+		}
+
+		// --- WEATHER LOGIC (OPEN-METEO NO KEY) ---
+		async function initWeather() {
+			const widget = document.getElementById('weather-widget');
+			const iconSpan = widget.querySelector('.weather-icon');
+			const tempSpan = widget.querySelector('.weather-temp');
+			
+			// WMO Code Map to Emojis
+			const getWeatherIcon = (code) => {
+				if (code === 0) return '☀️';
+				if ([1, 2, 3].includes(code)) return '⛅';
+				if ([45, 48].includes(code)) return '🌫️';
+				if ([51, 53, 55, 56, 57].includes(code)) return '🌧️';
+				if ([61, 63, 65, 66, 67].includes(code)) return '🌧️';
+				if ([71, 73, 75, 77, 85, 86].includes(code)) return '❄️';
+				if ([80, 81, 82].includes(code)) return '🌦️';
+				if ([95, 96, 99].includes(code)) return '⛈️';
+				return '🌡️';
+			};
+
+			const fetchWeather = async (lat, lon) => {
+				try {
+					const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+					const data = await res.json();
+					const temp = Math.round(data.current_weather.temperature);
+					const code = data.current_weather.weathercode;
+					
+					iconSpan.textContent = getWeatherIcon(code);
+					tempSpan.textContent = `${temp}°C`;
+					widget.classList.add('loaded');
+				} catch (e) {
+					console.error("Weather load failed", e);
+				}
+			};
+
+			// Default fallback location (Frankfurt/Central Germany) if geo fails or denied
+			const defaultLat = 50.11;
+			const defaultLon = 8.68;
+
+			if (navigator.geolocation) {
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						fetchWeather(position.coords.latitude, position.coords.longitude);
+					},
+					(error) => {
+						// Silent fallback
+						fetchWeather(defaultLat, defaultLon);
+					}
+				);
+			} else {
+				fetchWeather(defaultLat, defaultLon);
+			}
 		}
 
 		function init() {
@@ -594,6 +686,9 @@ const bookmarksData = [
 
 			// News Init
 			fetchNews();
+			
+			// Weather Init
+			initWeather();
 		}
 
 		function toggleDropdown(state) {
