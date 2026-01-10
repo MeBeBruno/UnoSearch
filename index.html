@@ -29,25 +29,80 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; scrollbar-width: none; }
         *::-webkit-scrollbar { display: none; }
-        body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-main); height: 100vh; padding: 0; overflow: hidden; }
-        #app { position: relative; height: 100vh; width: 100%; }
-        .search-wrapper { width: 100%; max-width: var(--width-search-max); padding: 0 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
-        .search-bar { display: flex; align-items: center; background-color: var(--search-bg); border-radius: var(--search-radius); border: 1px solid var(--border-color); padding: 0 var(--search-padding-x); height: var(--search-height); transition: border-color 0.2s ease, box-shadow 0.2s ease; position: relative; }
+        
+        /* Body erlaubt jetzt Scrolling */
+        body { 
+            font-family: var(--font-family); 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            min-height: 100vh; 
+            padding: 0; 
+            overflow-y: auto; /* Scrollen erlauben */
+            overflow-x: hidden;
+        }
+
+        #app { 
+            position: relative; 
+            width: 100%; 
+            padding-bottom: 100px; /* Platz unten für entspanntes Scrollen */
+        }
+
+        /* Search Wrapper: Sticky Logic */
+        .search-wrapper { 
+            width: 100%; 
+            max-width: var(--width-search-max); 
+            padding: 0 20px; 
+            margin: 40vh auto 40px auto; /* 40vh Start-Abstand simuliert die Mitte */
+            position: sticky; /* Klebt am Rand beim Scrollen */
+            top: 20px; /* Abstand zum oberen Rand beim Kleben */
+            z-index: 100; 
+        }
+
+        .search-bar { 
+            display: flex; 
+            align-items: center; 
+            background-color: var(--search-bg); 
+            border-radius: var(--search-radius); 
+            border: 1px solid var(--border-color); 
+            padding: 0 var(--search-padding-x); 
+            height: var(--search-height); 
+            transition: border-color 0.2s ease, box-shadow 0.2s ease; 
+            position: relative; 
+            box-shadow: 0 4px 20px var(--shadow-color); /* Leichter Schatten für Tiefe */
+        }
+        
         .search-bar:focus-within { border-color: var(--accent); }
+        
         .engine-dropdown { position: relative; height: 100%; display: flex; align-items: center; margin-right: 10px; }
         .engine-trigger { display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 12px; border-radius: 22px; cursor: pointer; transition: background 0.2s; color: var(--text-highlight); gap: 8px; font-size: var(--font-size-s); font-weight: var(--font-weight-semi); user-select: none; }
         .engine-trigger:hover { background-color: var(--dropdown-hover); }
         .engine-icon-current { width: 32px; height: 32px; border-radius: 4px; object-fit: contain; }
         .engine-arrow { width: 12px; height: 12px; opacity: 0.7; transition: transform 0.2s; }
         .engine-dropdown.open .engine-arrow { transform: rotate(180deg); }
-        .engine-options { position: absolute; top: 120%; left: 0; background-color: var(--search-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s ease; z-index: 200;max-height: 300px; overflow-y: auto; }
+        
+        .engine-options { position: absolute; top: 120%; left: 0; background-color: var(--search-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s ease; z-index: 200; max-height: 300px; overflow-y: auto; }
         .engine-dropdown.open .engine-options { opacity: 1; visibility: visible; transform: translateY(0); }
+        
         .engine-option { display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; color: var(--text-main); font-size: var(--font-size-m); gap: 12px; }
         .engine-option:hover { background-color: var(--dropdown-hover); color: var(--text-highlight); }
         .engine-option img { width: 20px; height: 20px; border-radius: 3px; }
+        
         .search-input { flex-grow: 1; background: transparent; border: none; color: var(--text-highlight); font-size: var(--font-size-l); height: 100%; padding-left: 5px; line-height: normal; }
         .search-input::placeholder { color: var(--text-placeholder); opacity: 0.6; }
-        .bookmarks-container { position: absolute; top: 50%; bottom: 0; left: 0; right: 0; width: 100%; max-width: var(--width-grid-max); margin: 0 auto; padding: 12vh 20px 50px; display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-col), 1fr)); gap: var(--grid-gap); align-content: start; overflow-y: auto; mask-image: linear-gradient(to bottom, transparent 0%, black 50px, black 90%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 50px, black 90%, transparent 100%); }
+        
+        /* Bookmarks Container: Fließt jetzt natürlich unter der Suche */
+        .bookmarks-container { 
+            width: 100%; 
+            max-width: var(--width-grid-max); 
+            margin: 0 auto; 
+            padding: 0 20px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-col), 1fr)); 
+            gap: var(--grid-gap); 
+            align-content: start; 
+            /* Keine Maske mehr nötig, da wir scrollen wollen */
+        }
+        
         .category-card { background-color: var(--card-bg); padding: var(--card-padding); border-radius: var(--card-radius); border: 1px solid var(--border-color); transition: background-color 0.2s ease, border-color 0.2s ease; }
         .category-card:hover { background-color: var(--card-hover); border-color: var(--accent); }
         .category-title { color: var(--accent); font-size: var(--font-size-s); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--spacing-l); font-weight: var(--font-weight-bold); border-bottom: 1px solid var(--border-color); padding-bottom: var(--spacing-s); }
@@ -58,7 +113,7 @@
         .link-icon { width: 16px; height: 16px; object-fit: contain; border-radius: 2px; opacity: 0.8; }
         .link-item a:hover .link-icon { opacity: 1; }
 
-        /* NEUER STIFT BUTTON STYLE */
+        /* Floating Edit Button (Fixed positioniert, bleibt immer sichtbar) */
         .floating-edit-btn {
             position: fixed;
             bottom: 30px;
@@ -74,7 +129,7 @@
             color: var(--text-main);
             text-decoration: none;
             box-shadow: 0 4px 12px var(--shadow-color);
-            z-index: 10000; /* Sehr hoch, damit er über allem liegt */
+            z-index: 10000;
             transition: all 0.2s ease;
         }
         .floating-edit-btn:hover {
@@ -91,13 +146,12 @@
         }
 
         @media (max-width: 600px) {
-            body { overflow: auto; }
-            #app { display: flex; flex-direction: column; height: auto; min-height: 100vh; padding: 40px 20px; }
-            .search-wrapper { position: relative; top: auto; left: auto; transform: none; margin-bottom: 40px; z-index: 100; }
-            .bookmarks-container { position: relative; top: auto; bottom: auto; padding-top: 0; height: auto; grid-template-columns: 1fr; mask-image: none; -webkit-mask-image: none; overflow: visible; }
+            #app { padding: 0 0 40px 0; }
+            /* Auf Mobile weniger Abstand oben, damit Tastatur Platz hat */
+            .search-wrapper { margin-top: 30vh; margin-bottom: 30px; top: 10px; } 
+            .bookmarks-container { grid-template-columns: 1fr; padding-top: 0; }
             .search-input { font-size: 20px; }
             :root { --search-height: 54px; }
-            /* Button auf Mobile etwas kleiner und näher am Rand */
             .floating-edit-btn { bottom: 20px; left: 20px; width: 44px; height: 44px; }
         }
     </style>
