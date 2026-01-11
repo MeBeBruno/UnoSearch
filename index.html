@@ -518,7 +518,7 @@
 				});
 
 				allNews.sort((a, b) => b.timestamp - a.timestamp);
-				renderNews(allNews.slice(0, 30));
+				renderNews(allNews.slice(0, 60));
 
 			} catch (e) {
 				console.error("News Error", e);
@@ -719,5 +719,6 @@
 	</script>
 </body>
 </html>
+
 
 
