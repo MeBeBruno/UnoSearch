@@ -1,6 +1,6 @@
 # Uno SearchⒷ
 
-<img src="https://img.shields.io/badge/Made by AI-333333" height="24rem"/>
+AI Label: B-[{C}](https://mebebruno.github.io/BrunosAILabelSystem/explain.html?code)
 
 > A clean HTML start page with search and bookmarks 🌐
 
