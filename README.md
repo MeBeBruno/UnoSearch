@@ -4,4 +4,4 @@ AI Label: B-[{C}](https://mebebruno.github.io/BrunosAILabelSystem/explain.html?c
 
 > A clean HTML start page with search and bookmarks 🌐
 
-→ [Live Page](https://mebebruno.github.io/UnoSearch/)
+&rarr; [Live Page](https://mebebruno.github.io/UnoSearch/)
